@@ -1,0 +1,7 @@
+{
+  "name": "hd800-tools",
+  "private": true,
+  "type": "module",
+  "scripts": { "convert": "node convert-dwg.mjs" },
+  "devDependencies": { "@mlightcad/libredwg-web": "*" }
+}
