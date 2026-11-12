@@ -2,7 +2,8 @@
 import { db, logActivity } from './db.js';
 import { esc, modal, toast, getUser, setUser, confirmBox, fmtTime, SIDES, SIDE_SHORT } from './util.js';
 
-export const REQ_STATUS = ['접수', '검토중', '완료'];
+// 최근 24시간 이내 글/답변 표시용
+export const isNew = (t) => Date.now() - new Date(t).getTime() < 864e5;
 
 export async function loadRequests() {
   const [rows, cmts] = await Promise.all([
@@ -16,10 +17,10 @@ export async function loadRequests() {
 }
 
 export function reqCard(r) {
-  return `<article class="req-card st-${esc(r.status)}" data-id="${r.id}" tabindex="0">
+  return `<article class="req-card kc-${esc(r.kind)}" data-id="${r.id}" tabindex="0">
     <div class="req-top">
       <span class="kind k-${esc(r.kind)}">${esc(r.kind)}</span>
-      <span class="st st-${esc(r.status)}">${esc(r.status)}</span>
+      ${isNew(r.created_at) ? '<span class="new-badge">N</span>' : ''}
       ${r.due_date ? `<span class="due small">회신희망 ${r.due_date.slice(5).replace('-', '/')}</span>` : ''}
     </div>
     <h4>${esc(r.title)}</h4>
@@ -31,10 +32,10 @@ export function reqCard(r) {
 // 작성/수정 모달
 export function editRequest(r, onDone, presetSide) {
   const u = getUser() || {};
-  const isNew = !r;
-  r = r || { side: presetSide || u.side || 'ACTT', kind: '요청', title: '', content: '', author: u.name || '', status: '접수', due_date: '' };
+  const creating = !r;
+  r = r || { side: presetSide || u.side || 'ACTT', kind: '요청', title: '', content: '', author: u.name || '', due_date: '' };
   modal({
-    title: isNew ? '요청 · 문의 작성' : '요청 · 문의 수정',
+    title: creating ? '요청 · 문의 작성' : '요청 · 문의 수정',
     wide: true,
     body: `
       <div class="grid2">
@@ -46,17 +47,15 @@ export function editRequest(r, onDone, presetSide) {
       <div class="grid2">
         <label class="field"><span>작성자 이름</span><input name="author" required maxlength="50" value="${esc(r.author)}" placeholder="이름 (직급)"></label>
         <label class="field"><span>회신 희망일 (선택)</span><input type="date" name="due_date" value="${esc(r.due_date || '')}"></label>
-      </div>
-      ${isNew ? '' : `<label class="field"><span>상태</span><div class="seg">${REQ_STATUS.map((s) => `<label><input type="radio" name="status" value="${s}" ${r.status === s ? 'checked' : ''}><span>${s}</span></label>`).join('')}</div></label>`}`,
-    actions: [{ label: isNew ? '등록' : '저장', primary: true, submit: true }],
+      </div>`,
+    actions: [{ label: creating ? '등록' : '저장', primary: true, submit: true }],
     onSubmit: async (fd) => {
       const row = {
         side: fd.get('side'), kind: fd.get('kind'), title: fd.get('title').trim(), content: fd.get('content').trim(),
         author: fd.get('author').trim(), due_date: fd.get('due_date') || null,
       };
-      if (!isNew) row.status = fd.get('status');
       if (!getUser()?.name) setUser({ name: row.author, side: row.side });
-      if (isNew) {
+      if (creating) {
         const saved = await db.insert('requests', row);
         logActivity(row.author, `[${SIDE_SHORT[row.side]}] ${row.kind} "${row.title}" 등록`, 'request');
         toast('등록했습니다');
@@ -82,9 +81,7 @@ export async function openRequest(id, onChange) {
     wide: true,
     body: `
       <div class="req-detail">
-        <div class="req-top"><span class="kind k-${esc(r.kind)}">${esc(r.kind)}</span>
-          <div class="seg sm" id="stSeg">${REQ_STATUS.map((s) => `<label><input type="radio" name="st" value="${s}" ${r.status === s ? 'checked' : ''}><span>${s}</span></label>`).join('')}</div>
-        </div>
+        <div class="req-top"><span class="kind k-${esc(r.kind)}">${esc(r.kind)}</span></div>
         <h3>${esc(r.title)}</h3>
         <div class="small muted">${esc(r.author)} · ${new Date(r.created_at).toLocaleString('ko-KR')}${r.due_date ? ' · 회신희망 ' + r.due_date : ''}</div>
         <div class="req-body">${esc(r.content) || '<span class="muted">(내용 없음)</span>'}</div>
@@ -113,11 +110,6 @@ export async function openRequest(id, onChange) {
     ],
     onClose: () => onChange && onChange(),
   });
-  f.querySelector('#stSeg').addEventListener('change', async (e) => {
-    await db.update('requests', r.id, { status: e.target.value });
-    logActivity(getUser()?.name || '익명', `${r.kind} "${r.title}" 상태 → ${e.target.value}`, 'request');
-    toast(`상태: ${e.target.value}`);
-  });
   f.querySelector('#cSend').addEventListener('click', async () => {
     const content = f.c_content.value.trim(), author = f.c_author.value.trim(), side = f.c_side.value;
     if (!content) { f.c_content.focus(); return; }
@@ -125,7 +117,6 @@ export async function openRequest(id, onChange) {
     if (!getUser()?.name) setUser({ name: author, side });
     await db.insert('comments', { request_id: r.id, author, side, content });
     logActivity(author, `"${r.title}"에 답변 등록`, 'request');
-    if (r.status === '접수') await db.update('requests', r.id, { status: '검토중' });
     f.close(true);
     openRequest(id, onChange);
   });
@@ -139,13 +130,13 @@ export async function openRequest(id, onChange) {
 
 export async function renderRequests(root, params) {
   let rows = [];
-  let stFilter = 'open';
+  let kFilter = 'all';
   let q = '';
   root.innerHTML = `
   <div class="req-page">
     <div class="toolbar card">
       <div class="tb-group">
-        <div class="seg sm" id="stF"><label><input type="radio" name="f" value="open" checked><span>미완료</span></label><label><input type="radio" name="f" value="all"><span>전체</span></label><label><input type="radio" name="f" value="done"><span>완료</span></label></div>
+        <div class="seg sm" id="kF"><label><input type="radio" name="f" value="all" checked><span>전체</span></label><label><input type="radio" name="f" value="요청"><span>요청사항</span></label><label><input type="radio" name="f" value="문의"><span>문의사항</span></label></div>
         <input type="search" id="q" placeholder="검색 (제목·내용·작성자)" class="search">
       </div>
     </div>
@@ -166,11 +157,10 @@ export async function renderRequests(root, params) {
     for (const col of root.querySelectorAll('.req-col')) {
       const side = col.dataset.side;
       const list = rows.filter((r) => r.side === side)
-        .filter((r) => (stFilter === 'all' ? true : stFilter === 'done' ? r.status === '완료' : r.status !== '완료'))
+        .filter((r) => kFilter === 'all' || r.kind === kFilter)
         .filter((r) => !q || (r.title + ' ' + r.content + ' ' + r.author).toLowerCase().includes(q));
-      const open = rows.filter((r) => r.side === side && r.status !== '완료').length;
-      col.querySelector('h3').dataset.count = open;
-      col.querySelector('.req-list').innerHTML = list.map(reqCard).join('') || `<p class="empty">${stFilter === 'open' ? '미완료 ' : ''}항목이 없습니다.</p>`;
+      col.querySelector('h3').dataset.count = rows.filter((r) => r.side === side).length;
+      col.querySelector('.req-list').innerHTML = list.map(reqCard).join('') || `<p class="empty">${q || kFilter !== 'all' ? '조건에 맞는 글이 없습니다.' : '아직 게시글이 없습니다.'}</p>`;
     }
   }
   root.addEventListener('click', (e) => {
@@ -180,7 +170,7 @@ export async function renderRequests(root, params) {
     if (card) openRequest(card.dataset.id, reload);
   });
   root.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('.req-card')) openRequest(e.target.dataset.id, reload); });
-  $('#stF').addEventListener('change', (e) => { stFilter = e.target.value; draw(); });
+  $('#kF').addEventListener('change', (e) => { kFilter = e.target.value; draw(); });
   $('#q').addEventListener('input', (e) => { q = e.target.value.trim().toLowerCase(); draw(); });
   await reload();
   if (params.id) openRequest(params.id, reload);

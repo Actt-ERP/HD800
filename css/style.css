@@ -268,6 +268,7 @@ textarea { resize: vertical; }
 .k-l { font-size: 12px; color: var(--muted); font-weight: 500; }
 .k-v { font-size: 26px; font-weight: 700; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
 .k-v small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 2px; letter-spacing: 0; }
+.k-new { margin-left: 8px; font-size: 12px; font-weight: 700; color: var(--danger); }
 .k-s { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .bar-prog { height: 6px; background: #edf0f4; border-radius: 99px; overflow: hidden; margin-top: 6px; }
 .bar-prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--primary), #4dabf7); border-radius: 99px; }
@@ -333,8 +334,9 @@ textarea { resize: vertical; }
 .req-list { display: flex; flex-direction: column; gap: 8px; }
 .req-card { border: 1px solid var(--line); border-left: 4px solid #fab005; border-radius: 10px; padding: 10px 12px; cursor: pointer; background: #fff; transition: box-shadow .15s, border-color .15s; }
 .req-card:hover, .req-card:focus { box-shadow: 0 4px 12px rgba(16, 24, 40, .1); outline: none; border-color: var(--line2); }
-.req-card.st-검토중 { border-left-color: #4c6ef5; }
-.req-card.st-완료 { border-left-color: #40c057; opacity: .7; }
+.req-card.kc-요청 { border-left-color: #e64980; }
+.req-card.kc-문의 { border-left-color: #339af0; }
+.new-badge { font-size: 10px; font-weight: 700; color: #fff; background: var(--danger); border-radius: 99px; padding: 0 5px; line-height: 16px; }
 .req-card h4 { font-size: 14px; margin: 4px 0 0; }
 .req-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .kind { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }

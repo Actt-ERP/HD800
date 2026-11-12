@@ -5,7 +5,7 @@ import { loadPlan, createPlanView, itemsBox, clearanceRows, itemClearance, minCl
 import { getMainLayout } from './layouts.js';
 import { renderLayout } from './view-layout.js';
 import { renderSchedule, loadSchedule, editEvent, catColor, layoutWeek, monthGridStart } from './view-schedule.js';
-import { renderRequests, loadRequests, reqCard, openRequest, editRequest } from './view-requests.js';
+import { renderRequests, loadRequests, reqCard, openRequest, editRequest, isNew } from './view-requests.js';
 
 const main = document.getElementById('main');
 let current = null; // 현재 화면 핸들 {canLeave, destroy, refresh}
@@ -110,7 +110,8 @@ async function renderDashboard(root) {
     const total = s0 ? diffDays(s0, s1) + 1 : 0;
     const passed = s0 ? Math.min(total, Math.max(0, diffDays(s0, today) + 1)) : 0;
     const doneCnt = events.filter((e) => e.status === '완료').length;
-    const openBy = (side) => reqs.filter((r) => r.side === side && r.status !== '완료').length;
+    const cntBy = (side) => reqs.filter((r) => r.side === side).length;
+    const newCnt = reqs.filter((r) => isNew(r.created_at)).length;
     const lv = worst ? clearLevel(worst.d) : null;
     $('#kpis').innerHTML = `
       <a class="kpi card" href="#/schedule">
@@ -121,8 +122,8 @@ async function renderDashboard(root) {
       </a>
       <a class="kpi card" href="#/schedule"><span class="k-l">작업 진행</span><span class="k-v">${doneCnt}<small>/${events.length} 완료</small></span>
         <span class="k-s">진행중 ${events.filter((e) => e.status === '진행중' || (e.start_date <= today && e.end_date >= today && e.status !== '완료')).length} · 지연 ${events.filter((e) => e.status === '지연').length}</span></a>
-      <a class="kpi card" href="#/requests"><span class="k-l">미완료 요청·문의</span><span class="k-v">${openBy('HD') + openBy('ACTT')}<small>건</small></span>
-        <span class="k-s"><span class="sidetag s-HD">현대</span>${openBy('HD')} · <span class="sidetag s-ACTT">액트투</span>${openBy('ACTT')}</span></a>
+      <a class="kpi card" href="#/requests"><span class="k-l">요청·문의 게시글</span><span class="k-v">${reqs.length}<small>건</small>${newCnt ? `<small class="k-new">새 글 ${newCnt}</small>` : ''}</span>
+        <span class="k-s"><span class="sidetag s-HD">현대</span>${cntBy('HD')} · <span class="sidetag s-ACTT">액트투</span>${cntBy('ACTT')}</span></a>
       <a class="kpi card" href="#/layout"><span class="k-l">최소 이격거리</span>
         ${worst ? `<span class="k-v ${lv.cls}-t">${fmtM(worst.d)}</span><span class="k-s">${esc(worst.i.short || worst.i.name)} · <span class="lv ${lv.cls}">${lv.text}</span></span>` : '<span class="k-v">-</span>'}</a>`;
 
@@ -148,9 +149,9 @@ async function renderDashboard(root) {
 
     // 요청
     $('#dReq').innerHTML = Object.entries(SIDES).map(([k, v]) => {
-      const list = reqs.filter((r) => r.side === k && r.status !== '완료').slice(0, 4);
+      const list = reqs.filter((r) => r.side === k).slice(0, 4);
       return `<div class="req-mini-col"><div class="row between"><h4><span class="sidetag s-${k}">${SIDE_SHORT[k]}</span>${v}</h4><button class="btn sm" data-new="${k}">＋ 작성</button></div>
-        ${list.map(reqCard).join('') || '<p class="empty small">미완료 항목 없음</p>'}</div>`;
+        ${list.map(reqCard).join('') || '<p class="empty small">게시글이 없습니다</p>'}</div>`;
     }).join('');
     $('#dReq').onclick = (e) => {
       const nb = e.target.closest('[data-new]');
