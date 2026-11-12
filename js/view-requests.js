@@ -21,7 +21,6 @@ export function reqCard(r) {
     <div class="req-top">
       <span class="kind k-${esc(r.kind)}">${esc(r.kind)}</span>
       ${isNew(r.created_at) ? '<span class="new-badge">N</span>' : ''}
-      ${r.due_date ? `<span class="due small">회신희망 ${r.due_date.slice(5).replace('-', '/')}</span>` : ''}
     </div>
     <h4>${esc(r.title)}</h4>
     ${r.content ? `<p class="clamp muted">${esc(r.content)}</p>` : ''}
@@ -33,7 +32,7 @@ export function reqCard(r) {
 export function editRequest(r, onDone, presetSide) {
   const u = getUser() || {};
   const creating = !r;
-  r = r || { side: presetSide || u.side || 'ACTT', kind: '요청', title: '', content: '', author: u.name || '', due_date: '' };
+  r = r || { side: presetSide || u.side || 'ACTT', kind: '요청', title: '', content: '', author: u.name || '' };
   modal({
     title: creating ? '요청 · 문의 작성' : '요청 · 문의 수정',
     wide: true,
@@ -44,15 +43,12 @@ export function editRequest(r, onDone, presetSide) {
       </div>
       <label class="field"><span>제목</span><input name="title" required maxlength="200" value="${esc(r.title)}" placeholder="예: 리액터 반입 시 지게차 지원 요청"></label>
       <label class="field"><span>내용</span><textarea name="content" rows="7" maxlength="5000" placeholder="요청 또는 문의 내용을 입력하세요">${esc(r.content)}</textarea></label>
-      <div class="grid2">
-        <label class="field"><span>작성자 이름</span><input name="author" required maxlength="50" value="${esc(r.author)}" placeholder="이름 (직급)"></label>
-        <label class="field"><span>회신 희망일 (선택)</span><input type="date" name="due_date" value="${esc(r.due_date || '')}"></label>
-      </div>`,
+      <label class="field"><span>작성자 이름</span><input name="author" required maxlength="50" value="${esc(r.author)}" placeholder="이름 (직급)"></label>`,
     actions: [{ label: creating ? '등록' : '저장', primary: true, submit: true }],
     onSubmit: async (fd) => {
       const row = {
         side: fd.get('side'), kind: fd.get('kind'), title: fd.get('title').trim(), content: fd.get('content').trim(),
-        author: fd.get('author').trim(), due_date: fd.get('due_date') || null,
+        author: fd.get('author').trim(),
       };
       if (!getUser()?.name) setUser({ name: row.author, side: row.side });
       if (creating) {
@@ -83,7 +79,7 @@ export async function openRequest(id, onChange) {
       <div class="req-detail">
         <div class="req-top"><span class="kind k-${esc(r.kind)}">${esc(r.kind)}</span></div>
         <h3>${esc(r.title)}</h3>
-        <div class="small muted">${esc(r.author)} · ${new Date(r.created_at).toLocaleString('ko-KR')}${r.due_date ? ' · 회신희망 ' + r.due_date : ''}</div>
+        <div class="small muted">${esc(r.author)} · ${new Date(r.created_at).toLocaleString('ko-KR')}</div>
         <div class="req-body">${esc(r.content) || '<span class="muted">(내용 없음)</span>'}</div>
         <h4 class="cmt-h">답변 · 의견 ${cmts.length}</h4>
         <ul class="cmts">${cmts.map((c) => `

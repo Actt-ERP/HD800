@@ -68,8 +68,9 @@ export function itemPoly(it) {
 // 설비 하나와 장애물 그룹 사이 최소 거리
 function distToGroup(it, segs) {
   let best = { d: Infinity };
+  // 리액터: 사각형은 바닥 구조물이라 이격거리는 원(코일) 기준
   const hasCircle = it.shape === 'circle' || it.shape === 'reactor';
-  const hasRect = it.shape !== 'circle';
+  const hasRect = !hasCircle;
   const c = [it.x, it.y];
   const poly = hasRect ? itemPoly(it) : null;
   for (const s of segs) {
@@ -218,8 +219,8 @@ export function createPlanView(container, plan, opts = {}) {
       if (it.shape === 'circle') {
         svgEl('circle', { r: it.r, class: 'shape' }, g);
       } else if (it.shape === 'reactor') {
-        svgEl('rect', { x: -it.w / 2, y: -it.h / 2, width: it.w, height: it.h, class: 'shape' }, g);
-        svgEl('circle', { r: it.r, class: 'shape inner' }, g);
+        svgEl('rect', { x: -it.w / 2, y: -it.h / 2, width: it.w, height: it.h, class: 'shape base' }, g);
+        svgEl('circle', { r: it.r, class: 'shape' }, g);
       } else {
         svgEl('rect', { x: -it.w / 2, y: -it.h / 2, width: it.w, height: it.h, rx: it.shape === 'tube' ? Math.min(it.w, it.h) / 4 : 0, class: 'shape' }, g);
       }

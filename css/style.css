@@ -203,10 +203,11 @@ textarea { resize: vertical; }
 .plan-svg .eq { cursor: move; }
 .plan-svg .eq.locked { cursor: not-allowed; }
 .plan-svg .eq .shape { fill: currentColor; fill-opacity: .22; stroke: currentColor; stroke-width: 2; vector-effect: non-scaling-stroke; }
-.plan-svg .eq .shape.inner { fill-opacity: .12; stroke-dasharray: 4 3; }
+/* 리액터 바닥 구조물(사각형): 점선, 이격거리 판정 제외 */
+.plan-svg .eq .shape.base { fill-opacity: .06; stroke-dasharray: 5 4; stroke-width: 1.5; }
 .plan-svg .eq .dir { fill: currentColor; opacity: .7; }
-.plan-svg .eq.sel .shape { stroke-width: 3.5; fill-opacity: .4; filter: drop-shadow(0 0 3px rgba(31, 94, 255, .6)); }
-.plan-svg .eq:hover .shape { fill-opacity: .35; }
+.plan-svg .eq.sel .shape:not(.base) { stroke-width: 3.5; fill-opacity: .4; filter: drop-shadow(0 0 3px rgba(31, 94, 255, .6)); }
+.plan-svg .eq:hover .shape:not(.base) { fill-opacity: .35; }
 .plan-svg .labels { pointer-events: none; font-weight: 700; font-family: 'Noto Sans KR', sans-serif; }
 .plan-svg .eq-label { fill: #1d2433; paint-order: stroke; stroke: rgba(255, 255, 255, .9); stroke-width: 3px; stroke-linejoin: round; }
 .plan-svg .eq-label.sel { fill: var(--primary); }
@@ -342,7 +343,6 @@ textarea { resize: vertical; }
 .kind { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
 .k-요청 { background: #fff0f6; color: #c2255c; }
 .k-문의 { background: #e7f5ff; color: #1971c2; }
-.due { color: var(--warn); font-weight: 500; }
 .req-foot { display: flex; gap: 10px; margin-top: 6px; }
 .req-foot .cmt { margin-left: auto; }
 .req-detail h3 { font-size: 18px; margin: 10px 0 4px; }
